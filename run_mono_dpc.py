@@ -81,9 +81,6 @@ def main():
     Reconstructor = stn.Reconstructor().to(device)
     loss = losses.Compute_Loss(Reconstructor, criterion, exp_loss, exp_weight = config['exp_weight'])
     model = mono_model_joint.joint_model(num_img_channels=(6 + 2*config['use_flow']), output_exp=args.exploss, dropout_prob=config['dropout_prob'], mode=args.mode).to(device)
-#    model.init_weights()
-    ###Use our own pretrained depth network
-#    model.load_state_dict(torch.load('pretrained/pretrained-model.pth'))
 
     params = list(model.parameters())
     optimizer = torch.optim.Adam(params, lr=config['lr'], weight_decay = config['wd']) #, amsgrad=True)

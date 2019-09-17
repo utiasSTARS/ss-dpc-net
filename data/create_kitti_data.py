@@ -8,14 +8,11 @@ from PIL import Image
 import argparse
 from liegroups import SE3
 
-parser = argparse.ArgumentParser(description='3D training arguments.')
+parser = argparse.ArgumentParser(description='arguments.')
 parser.add_argument("--source_dir", type=str, default='/media/m2-drive/datasets/KITTI/raw/')
 parser.add_argument("--target_dir", type=str, default='/media/m2-drive/datasets/KITTI-downsized/')
 parser.add_argument("--remove_static", action='store_true', default=True)
 args = parser.parse_args()
-
-#args.source_dir = '/media/brandon/DATA/KITTI/raw/'
-#args.target_dir = '/media/brandon/DATA/KITTI-downsized/'
 
 for mode in ['online', 'offline']:
     target_dir = '{}/{}/'.format(args.target_dir,mode)

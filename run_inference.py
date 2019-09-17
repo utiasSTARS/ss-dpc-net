@@ -42,9 +42,9 @@ args = parser.parse_args()
 for k in args.__dict__:
     config[k] = args.__dict__[k]
     
-model_dirs = 'paper_plots_and_data/online-models/'
+model_dirs = 'paper_plots_and_data/'
 date = 'best_stereo'
-pretrained_path = 'paper_plots_and_data/online-models/best_stereo/2019-6-24-13-4-most_loop_closures-val_seq-00-test_seq-05.pth'
+pretrained_path = '{}/{}/2019-6-24-13-4-most_loop_closures-val_seq-00-test_seq-05.pth'.format(model_dirs, date)
 
 output_dir = '{}{}/'.format(model_dirs,date)
 args.data_dir = '{}/{}'.format(args.data_dir,args.mode)
@@ -78,27 +78,3 @@ tm_dict = {'Dense': dense_tm,
                }
 est_vis = visualizers.TrajectoryVisualizer(tm_dict)
 fig, ax = est_vis.plot_topdown(which_plane='xy', plot_gt=False, outfile = 'paper_plots_and_data/figs/{}.pdf'.format(seq[0]), title=r'{}'.format(seq[0]))
-
-#for pretrained_path in glob.glob('{}**most_loop_closures**test_seq-{}**.pth'.format(output_dir, args.val_seq)):
-#    print(pretrained_path)
-#    test_dset = KittiLoaderPytorch(args.data_dir, config, [seq, seq, seq], mode='test', transform_img=get_data_transforms(config)['val'])
-#    test_dset_loaders = torch.utils.data.DataLoader(test_dset, batch_size=config['minibatch'], shuffle=False, num_workers=4)
-#    eval_dsets = {'test': test_dset_loaders}
-#    Reconstructor = stn.Reconstructor().to(device)
-#    model = mono_model_joint.joint_model(num_img_channels=(6 + 2*config['use_flow']), output_exp=args.exploss, dropout_prob=config['dropout_prob']).to(device)
-#    model.load_state_dict(torch.load(pretrained_path))
-#
-#    for key, dset in eval_dsets.items():
-#        ###plot images, depth map, explainability mask
-#        img_idx = np.arange(999,1010,2)  #2627, 2632 for 00, 
-#        img_array, disparity, exp_mask = test_depth_and_reconstruction(device, model, Reconstructor, dset, img_idx=img_idx)
-#        img_array = img_array.view(-1,3,3,img_array.size(2),img_array.size(3))
-#
-#        for i in range(0,img_array.shape[0]):
-#            plot_img_array(img_array[i,0], nrow=1, save_file = '{}{}{}.png'.format(figures_output_dir, '/imgs/', i))
-#            plot_disp(disparity[i], save_file = '{}{}{}.png'.format(figures_output_dir, '/depth/', i))
-#            if args.exploss:
-#                plot_img_array(exp_mask[i], nrow=1, save_file = '{}{}{}.png'.format(figures_output_dir, '/exp_mask/', i))
-#
-#plot_img_array(img_array[1:,0], nrow=(len(img_idx)), save_file = '{}{}{}.png'.format(figures_output_dir, '/imgs/', 'img_full'))
-#plot_img_array(exp_mask[:-1], nrow=(len(img_idx)), save_file = '{}{}{}.png'.format(figures_output_dir, '/imgs/', 'exp_mask_full'))

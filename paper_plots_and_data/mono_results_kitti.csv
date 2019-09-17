@@ -1,0 +1,10 @@
+,,,m-ATE,,Mean Segment Errors,
+Sequence (Length),Estimator,Mode,Trans. (m),Rot. (deg),Trans. (%),Rot. (deg/100m)
+09,libviso2,---,81.345,15.4,8.666,2.755
+,Ours,best loss,16.369,3.46,2.824,0.757
+,,loop closure,11.129,3.887,2.132,0.803
+
+10,libviso2,---,51.633,16.454,7.991,3.317
+,Ours,best loss,13.038,3.367,3.806,1.343
+,,loop closure,11.947,3.515,3.479,1.377
+

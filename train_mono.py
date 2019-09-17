@@ -24,7 +24,6 @@ def Train(device, pose_model, spatial_trans, dset, loss, optimizer,epoch):
 
         intrinsics = intrinsics.type(torch.FloatTensor).to(device)[:,0,:,:] #only need one matrix since it's constant across the sequence
 
-        vo_lie_alg[:,0:3] = vo_lie_alg[:,0:3]/vo_lie_alg[:,0:3].norm(dim=)
         corr, exp_mask, disparities = pose_model(img_list[0:3], vo_lie_alg)
         pose = se3_log_exp(corr, vo_lie_alg)
 
