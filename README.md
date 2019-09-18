@@ -1,8 +1,8 @@
 Supporting Code for "Self-Supervised Deep Pose Corrections for Robust Visual Odometry"
 
-<img src="https://github.com/utiasSTARS/ss-dpc-net/blob/master/system.png" width="400px"/>
+<img src="https://github.com/utiasSTARS/ss-dpc-net/blob/master/system.png" width="600px"/>
 
-<img src="https://github.com/utiasSTARS/ss-dpc-net/blob/master/network.png" width="400px"/>
+<img src="https://github.com/utiasSTARS/ss-dpc-net/blob/master/network.png" width="600px"/>
 
 ## Dependencies:
 * numpy
@@ -43,4 +43,5 @@ Our pretrained models are available online. To download them, run the following 
 bash download_data.sh
 ```
 
-Within `paper_plots_and_data`, run the various scripts to generate the tables and/or plot the trajectories within our paper. 
+Within `paper_plots_and_data`, run the various scripts to generate the tables and/or plot the trajectories within our paper. Our pretrained models are also available and can be run on any of the KITTI odometry sequences using `run_inference.py`.
+
