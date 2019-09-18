@@ -1,8 +1,8 @@
 Supporting Code for "Self-Supervised Deep Pose Corrections for Robust Visual Odometry"
 
-<img src="https://github.com/utiasSTARS/ss-dpc-net/blob/master/system.png" width="600px"/>
+<img src="https://github.com/utiasSTARS/ss-dpc-net/blob/master/data/system.png" width="600px"/>
 
-<img src="https://github.com/utiasSTARS/ss-dpc-net/blob/master/network.png" width="600px"/>
+<img src="https://github.com/utiasSTARS/ss-dpc-net/blob/master/data/network.png" width="600px"/>
 
 ## Dependencies:
 * numpy
