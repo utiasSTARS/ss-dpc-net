@@ -7,20 +7,16 @@ from torch.nn import init
 import numpy as np
 
 class joint_model(nn.Module):
-    def __init__(self, num_img_channels=8, nb_ref_imgs=1, output_exp=False, dropout_prob=0, mode='online'): 
+    def __init__(self, num_img_channels=8, nb_ref_imgs=1, output_exp=False, dropout_prob=0): 
         super(joint_model, self).__init__()
         self.nb_ref_imgs = nb_ref_imgs
         self.output_exp = output_exp
         self.dropout_prob=dropout_prob
         
-        if mode == 'online':
-            conv_planes =   [8, 16, 32, 64, 128, 256, 256] #
-            upconv_planes = [256, 128, 64, 32, 16, 8, 2*4]
-            fc1_multiplier = 6
-        if mode == 'offline':
-            conv_planes = [2*8, 2*16, 2*32, 2*64, 2*128, 2*256, 2*256]
-            upconv_planes = [2*256, 2*128, 2*64, 2*32, 2*16, 2*8, 2*4]
-            fc1_multiplier = 15
+        conv_planes =   [8, 16, 32, 64, 128, 256, 256] 
+        upconv_planes = [256, 128, 64, 32, 16, 8, 2*4]
+        fc1_multiplier = 6
+
         self.conv1 = self.downsample_conv(num_img_channels, conv_planes[0], kernel_size=7)
         self.conv2 = self.downsample_conv(conv_planes[0], conv_planes[1], kernel_size=5)
         self.conv3 = self.downsample_conv(conv_planes[1], conv_planes[2])
@@ -56,9 +52,6 @@ class joint_model(nn.Module):
         self.iconv6 = self.conv(upconv_planes[1] + conv_planes[4], upconv_planes[1])    # 256, 128
         self.iconv5 = self.conv(upconv_planes[2] + conv_planes[3], upconv_planes[2])    # 128, 64
         self.iconv4 = self.conv(upconv_planes[3] + conv_planes[2], upconv_planes[3])    # 64, 32
-#        self.iconv3 = self.conv(upconv_planes[4] + conv_planes[1], upconv_planes[4])    # 32, 16
-#        self.iconv2 = self.conv(upconv_planes[5] + conv_planes[0], upconv_planes[5])    # 16, 8
-#        self.iconv1 = self.conv(upconv_planes[6], upconv_planes[6])                     # 8, 8
         self.iconv3 = self.conv(1 + upconv_planes[4] + conv_planes[1], upconv_planes[4])
         self.iconv2 = self.conv(1 + upconv_planes[5] + conv_planes[0], upconv_planes[5])
         self.iconv1 = self.conv(1 + upconv_planes[6], upconv_planes[6])
@@ -92,7 +85,6 @@ class joint_model(nn.Module):
         pose = self.dropout(pose)   
         pose = self.fc2(pose)   #128,64
         pose = self.dropout(pose)
-#        pose = 0.01*self.fc3(pose)
 
         T21 = self.T_fc1(T21) #6 --> 128
         T21 = self.dropout(T21)

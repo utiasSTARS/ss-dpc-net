@@ -19,10 +19,9 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 device = torch.device(0)
 
 parser = argparse.ArgumentParser(description='')
-parser.add_argument('--data_dir', type=str, default='/media/brandon/DATA/KITTI-odometry-downsized/')
-parser.add_argument('--mode', type=str, default='online')
+parser.add_argument('--data_dir', type=str, default='/media/datasets/KITTI-dpc/')
 parser.add_argument('--estimator_type', type=str, default='stereo')
-parser.add_argument('--val_seq', nargs='+',type=str, default='19')
+parser.add_argument('--val_seq', nargs='+',type=str, default='05')
 parser.add_argument('--exploss', action='store_true', default=True)
 config={
     'num_frames': None,
@@ -47,7 +46,6 @@ date = 'best_stereo'
 pretrained_path = '{}/{}/2019-6-24-13-4-most_loop_closures-val_seq-00-test_seq-05.pth'.format(model_dirs, date)
 
 output_dir = '{}{}/'.format(model_dirs,date)
-args.data_dir = '{}/{}'.format(args.data_dir,args.mode)
 seq = [args.val_seq] #model.replace(output_dir,'').replace('/','').replace
 figures_output_dir = '{}figs'.format(output_dir)
 os.makedirs(figures_output_dir,exist_ok=True)

@@ -11,12 +11,12 @@ import glob
 
 class KittiLoaderPytorch(torch.utils.data.Dataset):
     """Loads the KITTI Odometry Benchmark Dataset"""
-    def __init__(self, basedir, config, seq, mode='train', transform_img=None, num_frames=None, augment=False, skip=None, stereo_imgs=False, augment_backwards=False, load_lidar=False, load_stereo=False):
+    def __init__(self, basedir, config, seq, mode='train', transform_img=None, num_frames=None, augment=False, skip=None, augment_backwards=False):
         """
         Args:
-            directory to raw KITTI sequences (pointing inside of raw)
-            config file (see dataloader demo)
-            desired sequences
+            directory to processed KITTI sequences
+            config file
+            desired sequences (use 'all' to load all sequences into the training dataset, except for the specified val and test sets)
             transform to apply to the images in the dataset
         """
         seq_names= {'00': '2011_10_03_drive_0027_sync',
@@ -45,15 +45,11 @@ class KittiLoaderPytorch(torch.utils.data.Dataset):
 
         self.config = config
         self.seq_len = config['img_per_sample']
-#        self.im_type = config['im_type']   #gray or colour
         self.transform_img = transform_img
         self.num_frames = num_frames
         self.augment = augment
         self.skip = skip
-        self.stereo_imgs = stereo_imgs
         self.augment_backwards = augment_backwards
-        self.use_lidar = load_lidar
-        self.use_stereo = load_stereo
 
             ###Iterate through all specified KITTI sequences and extract raw data, and trajectories
         self.left_cam_filenames = []
@@ -72,11 +68,11 @@ class KittiLoaderPytorch(torch.utils.data.Dataset):
                 for s in val_seq:
                     if name == seq_names[s]:
                         i=1
-                        print("excluding {}".format(name))
+                        print("excluding {} from training data (it's a validation sequence)".format(name))
                 for s in test_seq:
                     if name == seq_names[s]:
                         i=1
-                        print("excluding {}".format(name))                    
+                        print("excluding {} from training data (it's a test sequence)".format(name))                    
                 if i == 0:
                     seq.append(name)
                     seq_name[name] = name
@@ -91,7 +87,6 @@ class KittiLoaderPytorch(torch.utils.data.Dataset):
             seq = test_seq
         print('{} sequences: {}'.format(mode,seq))
         for s,i in zip(seq,range(0,len(seq))):
-            print(os.path.join(basedir, seq_name[s],'{}_data.mat'.format(config['estimator_type'])))
             data = sio.loadmat(os.path.join(basedir, seq_name[s],'{}_data.mat'.format(config['estimator_type'])))
             
             self.left_cam_filenames.append(np.copy(data['cam_02'].reshape((-1,1))))

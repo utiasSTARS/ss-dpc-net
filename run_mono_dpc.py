@@ -22,38 +22,37 @@ import os
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 parser = argparse.ArgumentParser(description='training arguments.')
-parser.add_argument('--data_dir', type=str, default='/media/datasets/KITTI-downsized')
+parser.add_argument('--data_dir', type=str, default='/media/datasets/KITTI-dpc')
 parser.add_argument('--date', type=str, default='0000000')
-parser.add_argument('--train_seq', nargs='+', type=str, default=['00'])
+parser.add_argument('--train_seq', nargs='+', type=str, default=['all'])
 parser.add_argument('--val_seq', nargs='+',type=str, default=['00'])
-parser.add_argument('--test_seq', nargs='+', type=str, default=['00'])
-parser.add_argument('--all_data', action='store_true', default=False)
-parser.add_argument('--augment_motion', action='store_true', default=False)
-parser.add_argument('--exploss', action='store_true', default=False)
-parser.add_argument('--wd', type=float, default=0)
-parser.add_argument('--lr', type=float, default=9e-4)
+parser.add_argument('--test_seq', nargs='+', type=str, default=['05'])
+
+parser.add_argument('--augment_motion', action='store_true', default=False) #skip samples to simulate faster motion
+parser.add_argument('--augment_backwards', action='store_true', default=False) #reverse sequences to simulate backwards motion
+parser.add_argument('--img_per_sample', type=int, default=2) ## 1 target image, and  'img_per_sample -1 source images.
+parser.add_argument('--correction_rate', type=int, default=1) ## if not one, only perform corrections every 'correction_rate' frames (samples become {1,3},{3,5},{5,7} when rate is 2)
+parser.add_argument('--skip', type=int, default=1) ## if not one, skip every 'skip' samples that are generated ({1,2}, {2,3}, {3,4} becomes {1,2}, {3,4}) 
+parser.add_argument('--exploss', action='store_true', default=True) ## For using the explainability loss 
 parser.add_argument('--exp_weight', type=float, default=0.18)
-parser.add_argument('--num_epochs', type=int, default=20)
-parser.add_argument('--lr_decay_epoch', type=float, default=4)
-parser.add_argument('--dropout_prob', type=float, default=0.3)
-parser.add_argument('--use_flow', action='store_true',default=False)
-parser.add_argument('--normalize_img', action='store_true',default=False)
-parser.add_argument('--save_results', action='store_true', default=False)
-parser.add_argument('--mode', type=str, default='online')
-parser.add_argument("--estimator_type", type=str, default='mono')
+parser.add_argument('--use_flow', action='store_true',default=True)  ## For using optical flow as a network input
+parser.add_argument('--normalize_img', action='store_true',default=True) ## Normalize images for network
+parser.add_argument("--estimator_type", type=str, default='mono') ## mono or stereo (the type of VO estimator being corrected)
+
+parser.add_argument('--minibatch', type=int, default=32) ## minibatch size
+parser.add_argument('--wd', type=float, default=0)  ## weight decay
+parser.add_argument('--lr', type=float, default=9e-4) ## Learning rate
+parser.add_argument('--num_epochs', type=int, default=20) ## Number of training epochs
+parser.add_argument('--lr_decay_epoch', type=float, default=4) ## decay learning rate every X epochs
+parser.add_argument('--dropout_prob', type=float, default=0.3) ## dropout for posenet
+parser.add_argument('--save_results', action='store_true', default=False) 
+
 args = parser.parse_args()
 config={
-    'num_frames': None,
-    'skip':1,    ### if not one, we skip every 'skip' samples that are generated ({1,2}, {2,3}, {3,4} becomes {1,2}, {3,4})
-    'correction_rate': 1, ### if not one, only perform corrections every 'correction_rate' frames (samples become {1,3},{3,5},{5,7} when 2)
-    'img_per_sample': 2,
-    'minibatch': 32,       ##minibatch size      
-    'augment_backwards': False,
+    'num_frames': None, ## if used, only take num_frames from each sequence for training
     }
 for k in args.__dict__:
     config[k] = args.__dict__[k]
-print(args.train_seq, args.test_seq, args.val_seq)
-args.data_dir = '{}/{}'.format(args.data_dir,args.mode)
 
 dsets = {x: KittiLoaderPytorch(args.data_dir, config, [args.train_seq, args.val_seq, args.test_seq], mode=x, transform_img=get_data_transforms(config)[x], num_frames = config['num_frames'], \
                                augment=config['augment_motion'], skip=config['skip'], augment_backwards=config['augment_backwards']) for x in ['train', 'val']}
@@ -69,21 +68,19 @@ eval_dsets = {'val': val_dset_loaders, 'test':test_dset_loaders}
 
 def main():
     results = {}
-    results['mode'] = config['mode']
     results['estimator'] = config['estimator_type']
     start = time.time()
     now= datetime.datetime.now()
     ts = '{}-{}-{}-{}-{}'.format(now.year, now.month, now.day, now.hour, now.minute)
-    print(ts)
-    
+
     criterion = losses.photometric_reconstruction_loss()
     exp_loss = losses.explainability_loss()
     Reconstructor = stn.Reconstructor().to(device)
     loss = losses.Compute_Loss(Reconstructor, criterion, exp_loss, exp_weight = config['exp_weight'])
-    model = mono_model_joint.joint_model(num_img_channels=(6 + 2*config['use_flow']), output_exp=args.exploss, dropout_prob=config['dropout_prob'], mode=args.mode).to(device)
+    model = mono_model_joint.joint_model(num_img_channels=(6 + 2*config['use_flow']), output_exp=args.exploss, dropout_prob=config['dropout_prob']).to(device)
 
     params = list(model.parameters())
-    optimizer = torch.optim.Adam(params, lr=config['lr'], weight_decay = config['wd']) #, amsgrad=True)
+    optimizer = torch.optim.Adam(params, lr=config['lr'], weight_decay = config['wd'])
 
     cudnn.benchmark = True
     
@@ -141,7 +138,6 @@ def main():
    
             corr_stacked[key] = np.vstack((corr_stacked[key], corr.reshape((1,-1,6))))
             est_traj_stacked[key] = np.vstack((est_traj_stacked[key], corr_traj_rot.reshape((1,-1,4,4))))
-#                losses_stacked = np.vstack((losses_stacked, loss_per_img_pair.reshape((1,-1))))
             corr_pose_change_vecs_stacked[key] = np.vstack((corr_pose_change_vecs_stacked[key], corr_pose_change_vec.reshape((1,-1,6))))
 
             results[key] = {'val_seq': args.val_seq, 
@@ -155,8 +151,8 @@ def main():
                'gt_traj': gt_traj, 
                }
              
-            if args.save_results and config['mode'] == 'online':   
-                os.makedirs('results/online-mode/{}'.format(config['date']), exist_ok=True)
+            if args.save_results:   
+                os.makedirs('results/{}'.format(config['date']), exist_ok=True)
                 if config['estimator_type'] == 'mono':
                     _, num_loop_closure, _ = find_loop_closures(corr_traj, cum_dist)
                 if config['estimator_type'] == 'stereo':
@@ -170,21 +166,21 @@ def main():
                     state_dict_loss = model.state_dict()
                     print("Lowest validation loss (saving model)")       
                     if key == 'val':
-                        torch.save(state_dict_loss, 'results/online-mode/{}/{}-best-loss-val_seq-{}-test_seq-{}.pth'.format(config['date'], ts, args.val_seq[0], args.test_seq[0]))
+                        torch.save(state_dict_loss, 'results/{}/{}-best-loss-val_seq-{}-test_seq-{}.pth'.format(config['date'], ts, args.val_seq[0], args.test_seq[0]))
                 if rot_seg_err < best_rot_seg_err[key]:
                     best_rot_seg_err[key] = rot_seg_err
                     best_rot_acc_epoch[key] = epoch
                     state_dict_acc = model.state_dict()
                     print("Lowest error (saving model)")
                     if key == 'val':
-                        torch.save(state_dict_acc, 'results/online-mode/{}/{}-best_rot_acc-val_seq-{}-test_seq-{}.pth'.format(config['date'], ts, args.val_seq[0], args.test_seq[0]))
+                        torch.save(state_dict_acc, 'results/{}/{}-best_rot_acc-val_seq-{}-test_seq-{}.pth'.format(config['date'], ts, args.val_seq[0], args.test_seq[0]))
                 if trans_err < best_trans_err[key]:
                     best_trans_err[key] = trans_err
                     best_trans_acc_epoch[key] = epoch
                     state_dict_trans = model.state_dict()
                     print("Lowest position error (saving model)")
                     if key == 'val':
-                        torch.save(state_dict_trans, 'results/online-mode/{}/{}-best_trans_acc-val_seq-{}-test_seq-{}.pth'.format(config['date'], ts, args.val_seq[0], args.test_seq[0]))
+                        torch.save(state_dict_trans, 'results/{}/{}-best_trans_acc-val_seq-{}-test_seq-{}.pth'.format(config['date'], ts, args.val_seq[0], args.test_seq[0]))
                        
                 if num_loop_closure >= most_loop_closure[key]:
                     most_loop_closure[key] = num_loop_closure
@@ -192,22 +188,16 @@ def main():
                     state_dict_loop_closure = model.state_dict()
                     print("Most Loop Closures detected ({})".format(most_loop_closure[key]))
                     if key == 'val':
-                        torch.save(state_dict_loop_closure, 'results/online-mode/{}/{}-most_loop_closures-val_seq-{}-test_seq-{}.pth'.format(config['date'], ts, args.val_seq[0], args.test_seq[0]))
+                        torch.save(state_dict_loop_closure, 'results/{}/{}-most_loop_closures-val_seq-{}-test_seq-{}.pth'.format(config['date'], ts, args.val_seq[0], args.test_seq[0]))
                 results[key]['best_rot_acc_epoch'] = best_rot_acc_epoch[key]
                 results[key]['best_trans_acc_epoch'] = best_trans_acc_epoch[key]
                 results[key]['best_loss_epoch'] = best_loss_epoch[key]
                 results[key]['best_loop_closure_epoch'] = most_loop_closure_epoch[key] 
-                sio.savemat('results/online-mode/{}/{}-results-val_seq-{}-test_seq-{}'.format(config['date'], ts, args.val_seq[0], args.test_seq[0]),results)
-                f = open("results/online-mode/{}/{}-config.txt".format(config['date'],ts),"w")
+                sio.savemat('results/{}/{}-results-val_seq-{}-test_seq-{}.mat'.format(config['date'], ts, args.val_seq[0], args.test_seq[0]),results)
+                f = open("results/{}/{}-config.txt".format(config['date'],ts),"w")
                 f.write( str(config) )
                 f.close()
 
-
-    if config['mode'] == 'offline':
-        os.makedirs('results/offline-mode/{}'.format(config['date']), exist_ok=True)
-        sio.savemat('results/offline-mode/{}/{}-results-val_seq-{}-test_seq-{}'.format(config['date'], ts, args.val_seq[0], args.test_seq[0]),results)
-        torch.save(model.state_dict(), 'results/offline-mode/{}/{}-val_seq-{}-test_seq-{}.pth'.format(config['date'], ts, args.val_seq[0], args.test_seq[0]))
-    
     duration = timeSince(start)    
     print("Training complete (duration: {})".format(duration))
  

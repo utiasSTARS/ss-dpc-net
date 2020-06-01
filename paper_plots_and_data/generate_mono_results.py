@@ -2,6 +2,7 @@ import scipy.io as sio
 import numpy as np
 from liegroups import SE3
 from pyslam.metrics import TrajectoryMetrics
+from generate_stereo_results import generate_trajectory_metrics
 import csv
 import glob
 stats_list = []
@@ -15,22 +16,6 @@ dpcnet_results = {'00': ['', 'DPC-Net', '---', 15.68, 3.07, 1.62, 0.559 ],
                  '02': ['', 'DPC-Net', '---', 17.69, 2.86, 1.16, 0.436],
                  '05': ['', 'DPC-Net', '---', 9.82, 3.57, 1.34, 0.562],
                  }
-
-def generate_trajectory_metrics(gt_traj, est_traj, name='',seq='', mode=''):
-    gt_traj_se3 = [SE3.from_matrix(T,normalize=True) for T in gt_traj]
-    est_traj_se3 = [SE3.from_matrix(T, normalize=True) for T in est_traj]
-    tm = TrajectoryMetrics(gt_traj_se3, est_traj_se3, convention = 'Twv')
-    
-    est_mATE_trans, est_mATE_rot = tm.mean_err()
-    est_mATE_rot = est_mATE_rot*180/np.pi
-    print("{} mean trans. error: {} | mean rot. error: {}".format(name, est_mATE_trans, est_mATE_rot))
-    
-    seg_lengths = list(range(100,801,100))
-    _, est_seg_errs = tm.segment_errors(seg_lengths, rot_unit='rad')
-    est_seg_err_trans = np.mean(est_seg_errs[:,1])*100
-    est_seg_err_rot = 100*np.mean(est_seg_errs[:,2])*180/np.pi
-    print("{} mean Segment Errors: {} (trans, %) | {} (rot, deg/100m)".format(name, est_seg_err_trans, est_seg_err_rot) )
-    return tm, (seq, name, mode, est_mATE_trans.round(3), est_mATE_rot.round(3), est_seg_err_trans.round(3), est_seg_err_rot.round(3))
 
     #Iterate through all models within a directory
 for f in sorted(glob.iglob('{}/**.mat'.format(data_dir), recursive=True)):
@@ -80,11 +65,11 @@ for f in sorted(glob.iglob('{}/**.mat'.format(data_dir), recursive=True)):
 
     est_tm, est_metrics =  generate_trajectory_metrics(gt_traj, est_traj, name='libviso2', seq=seq, mode='---')
     best_loss_tm, best_loss_metrics = generate_trajectory_metrics(gt_traj, best_loss_traj, name='Ours', seq='', mode='best loss')
-    best_loop_closure_tm, best_loop_closure_metrics = generate_trajectory_metrics(gt_traj, best_loop_closure_traj, name='', seq='', mode='loop closure')
+    best_loop_closure_tm, best_loop_closure_metrics = generate_trajectory_metrics(gt_traj, best_loop_closure_traj, name='Ours', seq='', mode='loop closure')
       
     stats_list.append(est_metrics)
-#    stats_list.append(dense_results[str(seq)])
-#    stats_list.append(dpcnet_results[str(seq)])
+    stats_list.append(dense_results[str(seq)])
+    stats_list.append(dpcnet_results[str(seq)])
     stats_list.append(best_loss_metrics)
     stats_list.append(best_loop_closure_metrics)
     stats_list.append('')

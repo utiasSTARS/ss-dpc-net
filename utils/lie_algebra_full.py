@@ -1,7 +1,7 @@
 import torch
 import numpy as np
-from liegroups.torch.so3 import SO3
-from liegroups.torch.se3 import SE3
+from liegroups.torch import SO3
+from liegroups.torch import SE3
 
 def allclose(mat1, mat2, tol=1e-10):
     """Check if all elements of two tensors are close within some tolerance.

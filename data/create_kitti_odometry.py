@@ -11,7 +11,7 @@ import glob
 
 parser = argparse.ArgumentParser(description='rguments.')
 parser.add_argument("--source_dir", type=str, default='/media/brandon/DATA/KITTI-odometry/dataset/')
-parser.add_argument("--target_dir", type=str, default='/media/brandon/DATA/KITTI-odometry-downsized/')
+parser.add_argument("--target_dir", type=str, default='/media/brandon/DATA/KITTI-odometry-dpc/')
 parser.add_argument("--remove_static", action='store_true', default=True)
 args = parser.parse_args()
 
@@ -20,21 +20,19 @@ os.makedirs(target_dir, exist_ok=True)
 seq_info = {}
 sequences = ['11', '12', '13', '14', '15', '16', '17', '18', '19', '20']
 
-if mode == 'online':
-    args.height = 240
-    args.width = 376
+args.height = 240
+args.width = 376
 
 stereo_libviso2_dir = 'libviso2-estimates/stereo-odometry/'
 
 def load_image(img_file):
-    img_height = args.height #240 #360 #
-    img_width = args.width #376 #564 
+    img_height = args.height 
+    img_width = args.width 
     img = np.array(Image.open(img_file))
     orig_img_height = img.shape[0]
     orig_img_width = img.shape[1]
     zoom_y = img_height/orig_img_height
     zoom_x = img_width/orig_img_width
-#    img = np.array(Image.fromarray(img).crop([425, 65, 801, 305]))
     img = np.array(Image.fromarray(img).resize((img_width, img_height)))
     return img, zoom_x, zoom_y, orig_img_width, orig_img_height
 
